@@ -11,6 +11,7 @@ CRITERIA = "Must be open hardware, publish schematics, and report data via API."
 ENTRY_URL = "https://github.com/example/weather-station"
 ENTRY_DESC = "ESP32 weather station with open schematics and REST API"
 ENTRY_BODY = "Open schematics and API docs. SEALED_BODY_MARKER"
+SALT = "steward-salt-9f8e7d6c5b4a"
 
 SCORE_80_JSON = json.dumps({"score": 77, "reasoning": "Strong but missing enclosure docs."})
 
@@ -23,18 +24,18 @@ def _create_round(contract, vm, creator, pot=1000, min_bond=10, entry_days=1):
     )
 
 
-def _commit(contract, vm, participant, round_id, url=ENTRY_URL, desc=ENTRY_DESC, bond=10):
+def _commit(contract, vm, participant, round_id, url=ENTRY_URL, desc=ENTRY_DESC, bond=10, salt=SALT):
     vm.sender = participant
     vm.value = bond
     return contract.commit_entry(
-        round_id=round_id, entry_url=url, entry_desc=desc,
+        round_id=round_id, entry_url=url, entry_desc=desc, salt=salt,
     )
 
 
-def _reveal(contract, vm, participant, round_id, url=ENTRY_URL, desc=ENTRY_DESC):
+def _reveal(contract, vm, participant, round_id, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT):
     vm.sender = participant
     return contract.reveal_entry(
-        round_id=round_id, entry_url=url, entry_desc=desc,
+        round_id=round_id, entry_url=url, entry_desc=desc, salt=salt,
     )
 
 
@@ -88,6 +89,8 @@ def test_commit_guards(direct_vm, direct_deploy):
         _commit(contract, direct_vm, alice, rid)
     direct_vm.warp((datetime.now() - timedelta(days=2)).isoformat())
     eid = _commit(contract, direct_vm, alice, rid)
+    assert contract.get_commit(eid)["entry_url"] == ""
+    assert contract.get_commit(eid)["entry_desc"] == ""
     with direct_vm.expect_revert("Already committed to this round"):
         _commit(contract, direct_vm, alice, rid)
 
@@ -100,16 +103,20 @@ def test_reveal_guards_and_commit_mismatch(direct_vm, direct_deploy):
     rid = _create_round(contract, direct_vm, creator)
     eid = _commit(contract, direct_vm, alice, rid, bond=10)
 
+    with direct_vm.expect_revert("Commit window has not closed"):
+        _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT)
+
+    direct_vm.warp((datetime.now() + timedelta(days=2)).isoformat())
     with direct_vm.expect_revert("No committed entry for sender"):
-        _reveal(contract, direct_vm, create_address("mallory"), rid, url=ENTRY_URL, desc=ENTRY_DESC)
-
+        _reveal(contract, direct_vm, create_address("mallory"), rid, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT)
     with direct_vm.expect_revert("Commit mismatch: content changed after commit"):
-        _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc="totally different desc")
+        _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc="totally different desc", salt=SALT)
 
-    _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC)
+    _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT)
     with direct_vm.expect_revert("Entry already revealed"):
-        _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC)
+        _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT)
     assert contract.get_commit(eid)["revealed"] is True
+    assert contract.get_commit(eid)["entry_url"] == ENTRY_URL
 
 
 def test_score_flow_quantize_and_settle(direct_vm, direct_deploy):
@@ -124,7 +131,7 @@ def test_score_flow_quantize_and_settle(direct_vm, direct_deploy):
         _score(contract, direct_vm, rid, eid)
 
     direct_vm.warp((datetime.now() + timedelta(days=2)).isoformat())
-    _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC)
+    _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT)
     result = _score(contract, direct_vm, rid, eid)
     assert result["score"] == 80
     assert contract.get_commit(eid)["scored"] is True
@@ -146,7 +153,8 @@ def test_abandon_after_score_deadline_refunds(direct_vm, direct_deploy):
 
     rid = _create_round(contract, direct_vm, creator, pot=1000, min_bond=10)
     eid = _commit(contract, direct_vm, alice, rid, bond=10)
-    _reveal(contract, direct_vm, alice, rid)
+    direct_vm.warp((datetime.now() + timedelta(days=2)).isoformat())
+    _reveal(contract, direct_vm, alice, rid, url=ENTRY_URL, desc=ENTRY_DESC, salt=SALT)
     direct_vm.warp((datetime.now() + timedelta(days=5)).isoformat())
     contract.abandon_round(round_id=rid)
     assert contract.get_round(rid)["status"] == "abandoned"

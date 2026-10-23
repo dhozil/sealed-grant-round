@@ -37,5 +37,10 @@ On-chain grant competitions where entrants must keep entries secret until the co
 Deployed on GenLayer studionet (chain `61999`):
 [`0x4aBec31752950876B0c2dB83a152002F95d773DE`](https://explorer-studio.genlayer.com/address/0x4aBec31752950876B0c2dB83a152002F95d773DE)
 
+## Steward Request Response
+**Request**: Please correct the sealed-entry lifecycle and provide matching submitted and deployed source. During the commit window, store only a commitment digest and bond - not the plaintext entry URL or description exposed by the public getters. Bind the digest to the URL, description, and an unpredictable participant-provided salt, then allow reveal only after the commit deadline and verify those revealed values against the digest. This correction must preserve the existing scoring, settlement, and timeout-refund paths.
+
+**Fix**: `commit_entry` now takes a participant salt and stores only the digest `sha256("{url}|{desc}|{salt}")` plus the bond (plaintext entry URL/description held out of storage and public getters until reveal); `reveal_entry` is gated to after the commit deadline and verifies the revealed values against the digest. Scoring, settlement, cancel, and abandon paths unchanged.
+
 ## Source Code
 See `contracts/sealed_grant_round.py`

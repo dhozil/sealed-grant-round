@@ -59,6 +59,7 @@ class SealedCommit:
     score: u256
     scored: bool
     scoring_reasoning: str
+    salt: str
 
 
 def _round_to_dict(r: SealedRound) -> dict:
@@ -84,8 +85,8 @@ def _commit_to_dict(c: SealedCommit) -> dict:
         "round_id": c.round_id,
         "participant": c.participant,
         "commit_hash": c.commit_hash,
-        "entry_url": c.entry_url,
-        "entry_desc": c.entry_desc,
+        "entry_url": c.entry_url if c.revealed else "",
+        "entry_desc": c.entry_desc if c.revealed else "",
         "bond": int(c.bond),
         "submitted_at": c.submitted_at,
         "revealed": c.revealed,
@@ -95,8 +96,8 @@ def _commit_to_dict(c: SealedCommit) -> dict:
     }
 
 
-def _commit_digest(entry_url: str, entry_desc: str) -> str:
-    return hashlib.sha256(f"{entry_url}|{entry_desc}".encode()).hexdigest()
+def _commit_digest(entry_url: str, entry_desc: str, salt: str) -> str:
+    return hashlib.sha256(f"{entry_url}|{entry_desc}|{salt}".encode()).hexdigest()
 
 
 def _build_scoring_prompt(rnd: dict, c: SealedCommit, fetched_content: str) -> str:
@@ -237,7 +238,7 @@ class SealedGrantRound(gl.Contract):
         return round_id
 
     @gl.public.write.payable
-    def commit_entry(self, round_id: str, entry_url: str, entry_desc: str) -> str:
+    def commit_entry(self, round_id: str, entry_url: str, entry_desc: str, salt: str) -> str:
         if round_id not in self.rounds:
             raise gl.vm.UserError("Round not found")
         r = self.rounds[round_id]
@@ -251,6 +252,8 @@ class SealedGrantRound(gl.Contract):
             raise gl.vm.UserError("URL too long")
         if len(entry_desc) > MAX_DESC_CHARS:
             raise gl.vm.UserError("Description too long")
+        if not salt.strip():
+            raise gl.vm.UserError("Salt is required")
         if int(gl.message.value) < int(r.min_bond):
             raise gl.vm.UserError("Bond below minimum")
 
@@ -266,15 +269,16 @@ class SealedGrantRound(gl.Contract):
         self.commits[entry_id] = SealedCommit(
             round_id=round_id,
             participant=participant,
-            commit_hash=_commit_digest(entry_url.strip(), entry_desc.strip()),
-            entry_url=entry_url.strip(),
-            entry_desc=entry_desc.strip(),
+            commit_hash=_commit_digest(entry_url.strip(), entry_desc.strip(), salt.strip()),
+            entry_url="",
+            entry_desc="",
             submitted_at=str(datetime.now()),
             bond=u256(int(gl.message.value)),
             revealed=False,
             score=u256(0),
             scored=False,
             scoring_reasoning="",
+            salt=salt.strip(),
         )
         # update stored metadata for the committer
         c = self.commits[entry_id]
@@ -285,12 +289,14 @@ class SealedGrantRound(gl.Contract):
         return entry_id
 
     @gl.public.write
-    def reveal_entry(self, round_id: str, entry_url: str, entry_desc: str) -> str:
+    def reveal_entry(self, round_id: str, entry_url: str, entry_desc: str, salt: str) -> str:
         if round_id not in self.rounds:
             raise gl.vm.UserError("Round not found")
         r = self.rounds[round_id]
         if r.status != STATUS_OPEN:
             raise gl.vm.UserError("Round is not open")
+        if datetime.now() < datetime.fromisoformat(r.commit_deadline):
+            raise gl.vm.UserError("Commit window has not closed")
         if datetime.now() >= datetime.fromisoformat(r.score_deadline):
             raise gl.vm.UserError("Scoring window has closed")
         if not entry_url.strip():
@@ -299,6 +305,8 @@ class SealedGrantRound(gl.Contract):
             raise gl.vm.UserError("URL too long")
         if len(entry_desc) > MAX_DESC_CHARS:
             raise gl.vm.UserError("Description too long")
+        if not salt.strip():
+            raise gl.vm.UserError("Salt is required")
 
         participant = gl.message.sender_address.as_hex
         entry_id = f"{round_id}:{participant}"
@@ -308,7 +316,7 @@ class SealedGrantRound(gl.Contract):
         if c.revealed:
             raise gl.vm.UserError("Entry already revealed")
 
-        if _commit_digest(entry_url.strip(), entry_desc.strip()) != c.commit_hash:
+        if _commit_digest(entry_url.strip(), entry_desc.strip(), salt.strip()) != c.commit_hash:
             raise gl.vm.UserError("Commit mismatch: content changed after commit")
 
         c.revealed = True

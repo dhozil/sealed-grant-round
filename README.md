@@ -9,7 +9,7 @@
 ![Status](https://img.shields.io/badge/status-live%20on%20studionet-2ea44f)
 ![Tests](https://img.shields.io/badge/tests-6%20passed-2ea44f)
 
-[Live Contract](https://explorer-studio.genlayer.com/address/0x4aBec31752950876B0c2dB83a152002F95d773DE) 
+[Live Contract](https://explorer-studio.genlayer.com/address/0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f) 
 
 [GenLayer Docs](https://docs.genlayer.com)
 
@@ -25,14 +25,14 @@ Grant competitions are vulnerable to front-running: entrants who see each other'
 
 | | |
 |---|---|
-| **Contract** | [SealedGrantRound](https://explorer-studio.genlayer.com/address/0x4aBec31752950876B0c2dB83a152002F95d773DE) |
-| **Address** | `0x4aBec31752950876B0c2dB83a152002F95d773DE` |
+| **Contract** | [SealedGrantRound](https://explorer-studio.genlayer.com/address/0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f) |
+| **Address** | `0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f` |
 | **Network** | GenLayer studionet (chain `61999`) |
 | **Status** | Deployed + verified on-chain |
 
 ## Highlights
 
-- **Commit-reveal sealing**: SHA-256 digest over `"{entry_url}|{entry_desc}"`; reveals verify against the committed hash, otherwise revert with `Commit mismatch: content changed after commit`
+- **Commit-reveal sealing**: SHA-256 digest over `"{entry_url}|{entry_desc}|{salt}"` bound to a participant-provided salt; commit stores digest+bond only (no plaintext during commit window), reveal after commit deadline verifies against the digest
 - **Bounded windows**: commit window and scoring window enforced by deterministic time gates; settlement only after all entries revealed + scored
 - **Bonded pot**: entrant bonds pool into the pot at settlement; unresolvable rounds abandonable only after scoring window closes
 
@@ -85,4 +85,4 @@ genvm-lint check contracts/sealed_grant_round.py
 ## Live Deployment
 
 Deployed on GenLayer studionet (chain `61999`):
-[`0x4aBec31752950876B0c2dB83a152002F95d773DE`](https://explorer-studio.genlayer.com/address/0x4aBec31752950876B0c2dB83a152002F95d773DE)
+[`0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f`](https://explorer-studio.genlayer.com/address/0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f)
