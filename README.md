@@ -9,7 +9,7 @@
 ![Status](https://img.shields.io/badge/status-live%20on%20studionet-2ea44f)
 ![Tests](https://img.shields.io/badge/tests-6%20passed-2ea44f)
 
-[Live Contract](https://explorer-studio.genlayer.com/address/0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f) 
+[Live Contract](https://explorer-studio.genlayer.com/address/0x73608D72410161e8Dd487887B309812bC43FF6AE) 
 
 [GenLayer Docs](https://docs.genlayer.com)
 
@@ -25,8 +25,8 @@ Grant competitions are vulnerable to front-running: entrants who see each other'
 
 | | |
 |---|---|
-| **Contract** | [SealedGrantRound](https://explorer-studio.genlayer.com/address/0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f) |
-| **Address** | `0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f` |
+| **Contract** | [SealedGrantRound](https://explorer-studio.genlayer.com/address/0x73608D72410161e8Dd487887B309812bC43FF6AE) |
+| **Address** | `0x73608D72410161e8Dd487887B309812bC43FF6AE` |
 | **Network** | GenLayer studionet (chain `61999`) |
 | **Status** | Deployed + verified on-chain |
 
@@ -85,4 +85,4 @@ genvm-lint check contracts/sealed_grant_round.py
 ## Live Deployment
 
 Deployed on GenLayer studionet (chain `61999`):
-[`0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f`](https://explorer-studio.genlayer.com/address/0x4DFF08D3b454b01E65B2BF3fFB348c936F2E483f)
+[`0x73608D72410161e8Dd487887B309812bC43FF6AE`](https://explorer-studio.genlayer.com/address/0x73608D72410161e8Dd487887B309812bC43FF6AE)
