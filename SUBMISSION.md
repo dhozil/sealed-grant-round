@@ -40,7 +40,10 @@ Deployed on GenLayer studionet (chain `61999`):
 ## Steward Request Response
 **Request**: Please correct the sealed-entry lifecycle and provide matching submitted and deployed source. During the commit window, store only a commitment digest and bond - not the plaintext entry URL or description exposed by the public getters. Bind the digest to the URL, description, and an unpredictable participant-provided salt, then allow reveal only after the commit deadline and verify those revealed values against the digest. This correction must preserve the existing scoring, settlement, and timeout-refund paths.
 
-**Fix**: `commit_entry` now takes a participant salt and stores only the digest `sha256("{url}|{desc}|{salt}")` plus the bond (plaintext entry URL/description held out of storage and public getters until reveal); `reveal_entry` is gated to after the commit deadline and verifies the revealed values against the digest. Scoring, settlement, cancel, and abandon paths unchanged.
+**Fix**: `commit_entry` now accepts only a participant-generated commitment digest (`sha256("{entry_url}|{entry_desc}|{salt}")`) plus the bond - no plaintext URL/description/salt in the public call - and stores the digest and bond only; `reveal_entry` is gated to after the commit deadline and verifies revealed values against the digest. Scoring, settlement, cancel, and abandon paths unchanged.
+
+## What Did You Change?
+During the commit window, the contract now stores only the commitment digest and bond - the plaintext entry URL and description are no longer kept in storage or exposed through public getters. The digest is bound to the entry URL, description, and an unpredictable participant-provided salt via SHA-256 (`sha256("{url}|{desc}|{salt}")`). `reveal_entry` now permits reveals only after the commit deadline and verifies the revealed values against the committed digest. The existing scoring, settlement, cancel, and abandon paths are preserved.
 
 ## Source Code
 See `contracts/sealed_grant_round.py`

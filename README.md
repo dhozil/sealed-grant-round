@@ -32,7 +32,7 @@ Grant competitions are vulnerable to front-running: entrants who see each other'
 
 ## Highlights
 
-- **Commit-reveal sealing**: SHA-256 digest over `"{entry_url}|{entry_desc}|{salt}"` bound to a participant-provided salt; commit stores digest+bond only (no plaintext during commit window), reveal after commit deadline verifies against the digest
+- **Commit-reveal sealing**: commit accepts a participant-generated commitment digest (`sha256("{url}|{desc}|{salt}")`) plus bond and stores **digest + bond only** (no plaintext URL/desc/salt); reveal after the commit deadline verifies the revealed values against the stored digest
 - **Bounded windows**: commit window and scoring window enforced by deterministic time gates; settlement only after all entries revealed + scored
 - **Bonded pot**: entrant bonds pool into the pot at settlement; unresolvable rounds abandonable only after scoring window closes
 

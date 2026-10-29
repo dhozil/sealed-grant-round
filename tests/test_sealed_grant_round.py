@@ -1,5 +1,6 @@
 """Direct-mode tests for the SealedGrantRound contract (commit-reveal grants)."""
 
+import hashlib
 import json
 import re
 from datetime import datetime, timedelta
@@ -27,8 +28,9 @@ def _create_round(contract, vm, creator, pot=1000, min_bond=10, entry_days=1):
 def _commit(contract, vm, participant, round_id, url=ENTRY_URL, desc=ENTRY_DESC, bond=10, salt=SALT):
     vm.sender = participant
     vm.value = bond
+    digest = hashlib.sha256(f"{url}|{desc}|{salt}".encode()).hexdigest()
     return contract.commit_entry(
-        round_id=round_id, entry_url=url, entry_desc=desc, salt=salt,
+        round_id=round_id, commit_hash=digest, bond=bond,
     )
 
 

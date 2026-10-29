@@ -59,7 +59,6 @@ class SealedCommit:
     score: u256
     scored: bool
     scoring_reasoning: str
-    salt: str
 
 
 def _round_to_dict(r: SealedRound) -> dict:
@@ -238,7 +237,7 @@ class SealedGrantRound(gl.Contract):
         return round_id
 
     @gl.public.write.payable
-    def commit_entry(self, round_id: str, entry_url: str, entry_desc: str, salt: str) -> str:
+    def commit_entry(self, round_id: str, commit_hash: str, bond: int) -> str:
         if round_id not in self.rounds:
             raise gl.vm.UserError("Round not found")
         r = self.rounds[round_id]
@@ -246,14 +245,10 @@ class SealedGrantRound(gl.Contract):
             raise gl.vm.UserError("Round is not open")
         if datetime.now() >= datetime.fromisoformat(r.commit_deadline):
             raise gl.vm.UserError("Commit window has closed")
-        if not entry_url.strip():
-            raise gl.vm.UserError("Entry URL is required")
-        if len(entry_url) > 500:
-            raise gl.vm.UserError("URL too long")
-        if len(entry_desc) > MAX_DESC_CHARS:
-            raise gl.vm.UserError("Description too long")
-        if not salt.strip():
-            raise gl.vm.UserError("Salt is required")
+        if not commit_hash.strip():
+            raise gl.vm.UserError("Commit hash is required")
+        if len(commit_hash) > 128:
+            raise gl.vm.UserError("Commit hash too long")
         if int(gl.message.value) < int(r.min_bond):
             raise gl.vm.UserError("Bond below minimum")
 
@@ -269,7 +264,7 @@ class SealedGrantRound(gl.Contract):
         self.commits[entry_id] = SealedCommit(
             round_id=round_id,
             participant=participant,
-            commit_hash=_commit_digest(entry_url.strip(), entry_desc.strip(), salt.strip()),
+            commit_hash=commit_hash.strip(),
             entry_url="",
             entry_desc="",
             submitted_at=str(datetime.now()),
@@ -278,7 +273,6 @@ class SealedGrantRound(gl.Contract):
             score=u256(0),
             scored=False,
             scoring_reasoning="",
-            salt=salt.strip(),
         )
         # update stored metadata for the committer
         c = self.commits[entry_id]
