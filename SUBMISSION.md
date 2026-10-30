@@ -43,7 +43,11 @@ Deployed on GenLayer studionet (chain `61999`):
 **Fix**: `commit_entry` now accepts only a participant-generated commitment digest (`sha256("{entry_url}|{entry_desc}|{salt}")`) plus the bond - no plaintext URL/description/salt in the public call - and stores the digest and bond only; `reveal_entry` is gated to after the commit deadline and verifies revealed values against the digest. Scoring, settlement, cancel, and abandon paths unchanged.
 
 ## What Did You Change?
-During the commit window, the contract now stores only the commitment digest and bond - the plaintext entry URL and description are no longer kept in storage or exposed through public getters. The digest is bound to the entry URL, description, and an unpredictable participant-provided salt via SHA-256 (`sha256("{url}|{desc}|{salt}")`). `reveal_entry` now permits reveals only after the commit deadline and verifies the revealed values against the committed digest. The existing scoring, settlement, cancel, and abandon paths are preserved.
+Commit window now stores only the SHA-256 digest + bond (no plaintext). Reveal is gated to after the commit deadline and verified against the salted digest. Scoring, settlement, cancel, abandon paths preserved.
+
+## Portal Submission
+- **What did you change?** (≤500 chars): Commit window now stores only the SHA-256 digest + bond (no plaintext). Reveal is gated to after the commit deadline and verified against the salted digest. Scoring, settlement, cancel, abandon paths preserved.
+- **Notes** (≤1000 chars): Final steward fix applied and redeployed. commit_entry takes only participant-generated digest+bond; reveal_entry verifies sha256(url|desc|salt). Lint+6/6 tests pass; on-chain verified on studionet 0x73608D72410161e8Dd487887B309812bC43FF6AE. Funds never locked: refund/abandon preserved.
 
 ## Source Code
 See `contracts/sealed_grant_round.py`
